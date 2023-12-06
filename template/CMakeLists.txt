@@ -6,11 +6,11 @@ if (POLICY CMP0141)
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<IF:$<AND:$<C_COMPILER_ID:MSVC>,$<CXX_COMPILER_ID:MSVC>>,$<$<CONFIG:Debug,RelWithDebInfo>:EditAndContinue>,$<$<CONFIG:Debug,RelWithDebInfo>:ProgramDatabase>>")
 endif()
 
-project ("color_cubes")
+project ("sum_codes")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
-add_executable(color_cubes "color_cubes.cpp")
+add_executable(sum_codes "main.cpp")
 
 if(TESTS_ENABLED)	
 	set(TEST_DIR ${PROJECT_SOURCE_DIR}/test)
@@ -21,7 +21,7 @@ endif()
 
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)
-  set_property(TARGET color_cubes PROPERTY CXX_STANDARD 20)
+  set_property(TARGET sum_codes PROPERTY CXX_STANDARD 20)
 endif()
 
 # TODO: Add tests and install targets if needed.
