@@ -24,8 +24,6 @@ int* parseGameSets(std::vector<std::string> sets) {
 
       // Get the number associated
       currNum = std::stoi(currCubeCount.substr(0, currCubeCount.find(' ')));
-      // std::cout << maxCubes[0] << " " << maxCubes[1] << " " << maxCubes[2]
-      //           << std::endl;
 
       // Get the color of cube and check if max
       if (currCubeCount.find('d') != std::string::npos &&
@@ -47,8 +45,6 @@ int* parseGameSets(std::vector<std::string> sets) {
     // Get the number associated
     currCubeCount = sets[i].substr(prevSetIdx + 1);
     currNum = std::stoi(currCubeCount.substr(0, currCubeCount.find(' ')));
-    // std::cout << maxCubes[0] << " " << maxCubes[1] << " " << maxCubes[2]
-    //           << std::endl;
 
     // Get the color of cube and check if max
     if (currCubeCount.find('d') != std::string::npos &&
@@ -128,11 +124,7 @@ int main() {
     std::string line;
     while (std::getline(dataFile, line)) {
       // Parse each game
-      // std::cout << line << std::endl;
       int* currGame = parseGame(line);
-
-      // std::cout << currGame[0] << " " << currGame[1] << " " << currGame[2]
-      //           << " " << currGame[3] << std::endl;
 
       if (currGame[1] <= maxCubes[0] && currGame[2] <= maxCubes[1] &&
           currGame[3] <= maxCubes[2]) {
