@@ -117,6 +117,7 @@ int main() {
   // Instantiate variables
   const int maxCubes[] = {12, 13, 14};  // Red, Green, Blue cubes
   int gameSum = 0;
+  int powerSum = 0;
 
   // Open data file
   dataFile.open(dataFileName);
@@ -137,11 +138,13 @@ int main() {
           currGame[3] <= maxCubes[2]) {
         gameSum += currGame[0];
       }
+      powerSum += currGame[1] * currGame[2] * currGame[3];
     }
   }
 
   // Print sum of codes and wait for input to end
-  std::cout << gameSum << std::endl;
+  std::cout << "Sum of Possible Game IDs: " << gameSum
+            << "\nSum of Game Powers: " << powerSum << std::endl;
   std::cin.ignore();
 
   return 0;
