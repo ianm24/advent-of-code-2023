@@ -4,10 +4,11 @@
 #include <cmath>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <string>
 #include <vector>
 
-// Gets the number of points for a card
+// Gets the number of matches for a card
 int getCardWinnings(std::string line) {
   const std::string digits = "0123456789";
   int points = 0;
@@ -70,9 +71,27 @@ int getCardWinnings(std::string line) {
     numStartIdx = playerNums.substr(numEndIdx).find_first_of(digits);
   }
 
-  // Calculate points based on matching numbers
-  points = pow(2, matchingNumCount - 1);
-  return points;
+  // Return number of matches
+  return matchingNumCount;
+}
+
+// Based on the winnings = copies rule, gets the total amount of scratchcards
+int getNumScratchcards(std::map<int, int> cardWinningsMap, int numCards) {
+  int numScratchcards = 0;
+  std::vector<int> cardsPerID(numCards, 1);
+
+  // Go through each card
+  for (int i = 1; i < numCards + 1; i++) {
+    int numWins = cardWinningsMap[i];
+
+    // Add one card to j-1 card for each instance of a i-1 card
+    for (int j = i + 1; j <= i + numWins; j++) {
+      cardsPerID[j - 1] += cardsPerID[i - 1];
+    }
+    numScratchcards += cardsPerID[i - 1];
+  }
+
+  return numScratchcards;
 }
 
 int main() {
@@ -82,6 +101,8 @@ int main() {
 
   // Instantiate variables
   int cardSum = 0;
+  std::map<int, int> cardWinningsMap;
+  int cardID = 1;
 
   // Open data file
   dataFile.open(dataFileName);
@@ -91,12 +112,20 @@ int main() {
     // Get each line in the file
     std::string line;
     while (std::getline(dataFile, line)) {
-      cardSum += getCardWinnings(line);
+      // First pass calculates number of matches and points for each card
+      int matchingNumCount = getCardWinnings(line);
+      cardSum += pow(2, matchingNumCount - 1);
+      cardWinningsMap.insert(std::pair<int, int>(cardID, matchingNumCount));
+      cardID++;
     }
   }
 
+  int numScratchcards = getNumScratchcards(cardWinningsMap, cardID - 1);
+
   // Print sum of codes and wait for input to end
-  std::cout << cardSum << std::endl;
+  std::cout << "Card Points Sum:" << cardSum
+            << "\nNumber of original and copied scratchcards:"
+            << numScratchcards << std::endl;
   std::cin.ignore();
 
   return 0;
