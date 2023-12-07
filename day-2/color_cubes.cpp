@@ -1,5 +1,5 @@
 // Code by Ian Chandler McDowell
-// Written: 2 Dec 2023
+// Written: 6 Dec 2023
 
 #include <fstream>
 #include <iostream>

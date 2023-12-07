@@ -1,5 +1,5 @@
 // Code by Ian Chandler McDowell
-// Written: 2 Dec 2023
+// Written: 6-7 Dec 2023
 
 #include <fstream>
 #include <iostream>
@@ -45,23 +45,25 @@ std::map<int, std::string> getPartNumMap(std::vector<std::string> schematic) {
       if (partNumStartIdx != std::string::npos) {
         partNumStartIdx += partNumEndIdx;
       }
-
-      // std::cout << "Found Number:" << mapIdx << "|" << partNum << "|"
-      //           << partNumEndIdx << "|" << partNumStartIdx << "|"
-      //           << row.substr(partNumEndIdx) << "|" << std::endl;
     }
   }
 
   return partNumMap;
 }
 
-// Checks adjacent spaces and adds valid part numbers
-void checkAdjacentSpaces(std::vector<std::string> schematic,
-                         std::map<int, std::string> &partNumMap,
-                         std::vector<int> &adjPartNums, int symbolIdx) {
+// Checks adjacent spaces for valid part numbers.
+// Returns gear ratio if applicable.
+int checkAdjacentSpaces(std::vector<std::string> schematic,
+                        std::map<int, std::string> &partNumMap,
+                        std::vector<int> &adjPartNums, int symbolIdx) {
   // Schematic dimensions
   int numRows = schematic.size();
   int numCols = schematic[0].size();
+
+  // Keep track of gearRatio
+  int gearRatio = 0;
+  int adjNumCount = 0;
+  bool isGear = schematic[symbolIdx / numCols][symbolIdx % numCols] == '*';
 
   // Adjacent map indices are just the current index added to these
   const int *adjacentSpaces =
@@ -75,8 +77,6 @@ void checkAdjacentSpaces(std::vector<std::string> schematic,
   // Check each adjacent space
   for (int j = 0; j < numAdjSpaces; j++) {
     int currMapIdx = symbolIdx + adjacentSpaces[j];
-
-    // std::cout << "before: " << symbolIdx << "|" << currMapIdx << std::endl;
 
     // Ignore spaces outside schematic
     bool aboveTop = (currMapIdx < 0);
@@ -94,9 +94,6 @@ void checkAdjacentSpaces(std::vector<std::string> schematic,
       continue;
     }
 
-    // std::cout << "Valid Adjacent Space: " << symbolIdx << "|" << currMapIdx
-    //           << std::endl;
-
     // Go through the map of part numbers
     std::string pNum = "";
     for (std::map<int, std::string>::iterator iter = partNumMap.begin();
@@ -108,31 +105,46 @@ void checkAdjacentSpaces(std::vector<std::string> schematic,
           mapIdx != prevNumAddedIdx) {
         // If part number is adjacent and not already marked, mark as such
         pNum = iter->second;
-        // std::cout << "Found Adjacent Number:" << currMapIdx << "|" << mapIdx
-        //           << "|" << pNum << "|" << std::endl;
         adjPartNums.push_back(stoi(pNum));
         prevNumAddedIdx = mapIdx;
+
+        // Keep track of gear ratio
+        if (isGear && adjNumCount == 0) {
+          gearRatio += stoi(pNum);
+          adjNumCount++;
+        } else if (isGear && adjNumCount == 1) {
+          gearRatio *= stoi(pNum);
+          adjNumCount++;
+        } else {
+          adjNumCount++;
+        }
         break;
       }
     }
-
-    // TODO If pNum added to list, remove from map
-    // if (pNum != "") {
-    //  partNumMap.erase(pNum);
-    //  pNum = "";
-    //}
   }
+
+  // If this is a valid gear, return its ratio for sum otherwise 0
+  if (adjNumCount != 2) {
+    isGear = false;
+  }
+  if (isGear) {
+    return gearRatio;
+  }
+  return 0;
 }
 
 // Gets a vector containing all part numbers adjacent to a non-'.' symbol
-std::vector<int> getAdjacentPartNums(std::vector<std::string> schematic,
-                                     std::map<int, std::string> partNumMap) {
+int *getAdjacentPartNums(std::vector<std::string> schematic,
+                         std::map<int, std::string> partNumMap) {
   std::string nonSpecialSymbols = "0123456789.";
   std::vector<int> adjPartNums;
 
   // Schematic dimensions
   int numRows = schematic.size();
   int numCols = schematic[0].size();
+
+  int gearRatioSum = 0;
+  int partNumSum = 0;
 
   // For each row
   for (int i = 0; i < schematic.size(); i++) {
@@ -141,16 +153,15 @@ std::vector<int> getAdjacentPartNums(std::vector<std::string> schematic,
     while (symbolIdx != std::string::npos) {
       //   Get map index and search for part numbers in adjacent spaces
       int symbolMapIdx = numCols * i + symbolIdx;
-      // std::cout << "Found Symbol:" << symbolMapIdx << "|"
-      //           << schematic[i][symbolIdx] << std::endl;
-      checkAdjacentSpaces(schematic, partNumMap, adjPartNums, symbolMapIdx);
+
+      gearRatioSum +=
+          checkAdjacentSpaces(schematic, partNumMap, adjPartNums, symbolMapIdx);
 
       // Look for next symbol in the row
       prevSymbolIdx = symbolIdx + 1;
       symbolIdx = schematic[i]
                       .substr(prevSymbolIdx)
                       .find_first_not_of(nonSpecialSymbols);
-      // std::cout << "symbolIdx:" << symbolIdx << std::endl;
 
       if (symbolIdx != std::string::npos) {
         symbolIdx += prevSymbolIdx;
@@ -158,23 +169,21 @@ std::vector<int> getAdjacentPartNums(std::vector<std::string> schematic,
     }
   }
 
-  return adjPartNums;
-}
-
-// Gets the sum of valid part numbers from the schematic
-int readSchematic(std::vector<std::string> schematic) {
-  int partNumSum = 0;
-
-  std::cout << "1: Starting number parsing" << std::endl;
-  std::map<int, std::string> partNumMap = getPartNumMap(schematic);
-  std::cout << "2, Starting symbol finding:" << partNumMap.size() << std::endl;
-  std::vector<int> adjPartNums = getAdjacentPartNums(schematic, partNumMap);
-  std::cout << "3, doing sum:" << adjPartNums.size() << std::endl;
   for (int i = 0; i < adjPartNums.size(); i++) {
     partNumSum += adjPartNums[i];
   }
 
-  return partNumSum;
+  return new int[2]{partNumSum, gearRatioSum};
+}
+
+// Gets the sum of valid part numbers from the schematic
+int *readSchematic(std::vector<std::string> schematic) {
+  int partNumSum = 0;
+
+  std::map<int, std::string> partNumMap = getPartNumMap(schematic);
+  int *partNumSums = getAdjacentPartNums(schematic, partNumMap);
+
+  return partNumSums;
 }
 
 int main() {
@@ -183,7 +192,7 @@ int main() {
   std::ifstream dataFile;
 
   // Instantiate variables
-  int partSum = 0;
+  int *partNumSums = new int[2]{0, 0};
   std::vector<std::string> schematic;
 
   // Open data file
@@ -199,10 +208,11 @@ int main() {
     }
   }
 
-  partSum = readSchematic(schematic);
+  partNumSums = readSchematic(schematic);
 
   // Print sum of codes and wait for input to end
-  std::cout << partSum << std::endl;
+  std::cout << "Sum of Symbol-Adjacent Part Numbers:" << partNumSums[0]
+            << "\nSum of Valid Gear Ratios: " << partNumSums[1] << std::endl;
   std::cin.ignore();
 
   return 0;
